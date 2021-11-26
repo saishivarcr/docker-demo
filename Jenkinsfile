@@ -1,9 +1,12 @@
 pipeline {
-    environment {
+  environment {
         imagename = 'sai/demo-docker'
         dockerImage = ''
   }
   agent any
+  options {
+        ansiColor('xterm')
+    }
   stages {
     stage('Building Docker Image') {
       steps{
@@ -25,7 +28,14 @@ pipeline {
                       sed -E \'s/.*"v([^"]+)".*/\\1/\' \\
                       ) && curl -L -o dockle.tar.gz https://github.com/goodwithtech/dockle/releases/download/v${VERSION}/dockle_${VERSION}_Linux-64bit.tar.gz &&  \\
                       tar zxvf dockle.tar.gz'''
-                sh "./dockle --exit-code 0 ${imagename}:${BUILD_NUMBER}"
+                                
+                sh "./dockle --exit-code 0 ${imagename}:${BUILD_NUMBER} | tee dockle-${BUILD_NUMBER}.out"
+
+                sh "cat dockle-${BUILD_NUMBER}.out | aha > dockle-${BUILD_NUMBER}.html"
+
+                sh "wkhtmltopdf dockle-${BUILD_NUMBER}.html dockle-${BUILD_NUMBER}.pdf"
+
+                archiveArtifacts artifacts: '*.pdf', fingerprint: true
             }
         }
   }
