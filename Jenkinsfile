@@ -1,6 +1,5 @@
 pipeline {
     environment {
-    imagename = "sai/docker-demo"
     dockerImage = ''
   }
   agent any
@@ -14,7 +13,7 @@ pipeline {
     stage('Building image') {
       steps{
         script {
-          dockerImage = docker.build imagename:${BUILD_NUMBER}
+          dockerImage = docker.build "sai/docker-demo:${BUILD_NUMBER}"
         }
       }
     }
