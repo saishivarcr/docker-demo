@@ -15,7 +15,7 @@ pipeline {
         }
       }
     }
-    stage('Docker Image Scan') {
+    stage('Docker Image Scan With Dockle') {
             when {
               expression {
                 currentBuild.result == null || currentBuild.result == 'SUCCESS' 
@@ -34,6 +34,27 @@ pipeline {
                 sh "cat dockle-${BUILD_NUMBER}.out | aha > dockle-${BUILD_NUMBER}.html"
 
                 sh "wkhtmltopdf dockle-${BUILD_NUMBER}.html dockle-${BUILD_NUMBER}.pdf"
+
+                archiveArtifacts artifacts: '*.pdf', fingerprint: true
+            }
+        }
+    stage('Docker Image Scan With Trivy') {
+            when {
+              expression {
+                currentBuild.result == null || currentBuild.result == 'SUCCESS' 
+              }
+            }
+            steps {
+                sh '''VERSION=$(curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep \'"tag_name":\' | sed -E \'s/.*"v([^"]+)".*/\\1/\') && \\
+                wget https://github.com/aquasecurity/trivy/releases/download/v${VERSION}/trivy_${VERSION}_Linux-64bit.tar.gz && \\
+                tar zxvf trivy_${VERSION}_Linux-64bit.tar.gz'''
+                                
+
+                sh "./trivy --no-progress ${imagename}:${BUILD_NUMBER} | tee trivy-${BUILD_NUMBER}.out"
+
+                sh "cat trivy-${BUILD_NUMBER}.out | aha > trivy-${BUILD_NUMBER}.html"
+
+                sh "wkhtmltopdf trivy-${BUILD_NUMBER}.html trivy-${BUILD_NUMBER}.pdf"
 
                 archiveArtifacts artifacts: '*.pdf', fingerprint: true
             }
